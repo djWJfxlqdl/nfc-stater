@@ -176,6 +176,32 @@
       white-space: nowrap;
     }
 
+    .countdown-box {
+      margin-top: 18px;
+      padding: 14px 16px;
+
+      border-radius: 11px;
+
+      background: rgba(255,83,107,0.05);
+      border: 1px solid rgba(255,83,107,0.12);
+
+      text-align: center;
+    }
+
+    .countdown-label {
+      color: #ff7184;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .payment-countdown {
+      color: #ff536b;
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: 2px;
+    }
+
     .section {
       margin-top: 32px;
     }
@@ -442,7 +468,6 @@
       line-height: 1.8;
     }
 
-    /* 스팸함 안내 */
     .spam-notice {
       display: inline-block;
       margin-top: 4px;
@@ -579,14 +604,34 @@
 
       </div>
 
-      <div class="price">
+      <div
+        class="price"
+        id="paymentPrice"
+      >
         ₩29,900
       </div>
 
     </div>
 
 
-    <!-- 1. 이메일 -->
+    <div
+      class="countdown-box"
+      id="countdownBox"
+    >
+
+      <div class="countdown-label">
+        현재 할인 가격 유지까지
+      </div>
+
+      <div
+        class="payment-countdown"
+        id="paymentCountdown"
+      >
+        03:00:00
+      </div>
+
+    </div>
+
 
     <div class="section">
 
@@ -613,8 +658,6 @@
 
     </div>
 
-
-    <!-- 2. 계좌 -->
 
     <div class="section">
 
@@ -672,7 +715,10 @@
             입금 금액
           </span>
 
-          <span class="bank-value amount">
+          <span
+            class="bank-value amount"
+            id="bankAmount"
+          >
             29,900원
           </span>
 
@@ -682,8 +728,6 @@
 
     </div>
 
-
-    <!-- 3. 입금자명 -->
 
     <div class="section">
 
@@ -711,14 +755,15 @@
     </div>
 
 
-    <!-- 안내 -->
-
     <div class="notice">
 
       <strong>입금 전 꼭 확인해주세요.</strong>
       <br>
 
-      • 입금 금액은 <strong>29,900원</strong>입니다.
+      • 입금 금액은
+      <strong id="noticeAmount">
+        29,900원
+      </strong>입니다.
       <br>
 
       • 이메일 주소와 입금자명을 정확하게 입력해주세요.
@@ -731,8 +776,6 @@
 
     </div>
 
-
-    <!-- 제출 버튼 -->
 
     <button
       type="button"
@@ -752,8 +795,6 @@
 
 </main>
 
-
-<!-- 성공 모달 -->
 
 <div
   class="modal"
@@ -788,8 +829,6 @@
 </div>
 
 
-<!-- 숨겨진 Google 전송 iframe -->
-
 <iframe
   name="googleSubmitFrame"
   id="googleSubmitFrame"
@@ -803,19 +842,223 @@ const GOOGLE_SCRIPT_URL =
 "https://script.google.com/macros/s/AKfycbxe4XvBx2OJSGFz7i6Dzo0f4dlpFss3vOT6UAYmvq3qVVPrTMvobNtIQLZntGl53yrupA/exec";
 
 
+/*
+  ==========================================
+  가격 / 타이머 설정
+  ==========================================
+*/
+
+const COUNTDOWN_DURATION =
+  3 * 60 * 60 * 1000;
+
+const STORAGE_KEY =
+  "nfcStarterDeadline";
+
+
+let deadline =
+  localStorage.getItem(
+    STORAGE_KEY
+  );
+
+
+/*
+  처음 방문했을 때만
+  3시간을 생성합니다.
+
+  localStorage이기 때문에
+
+  새로고침
+  사이트 나가기
+  브라우저 종료
+
+  모두 시간을 유지합니다.
+*/
+
+if (!deadline) {
+
+  deadline =
+    Date.now() + COUNTDOWN_DURATION;
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    deadline
+  );
+
+}
+
+
+function getCurrentPrice() {
+
+  if (
+    Number(deadline) <= Date.now()
+  ) {
+
+    return 49900;
+
+  }
+
+  return 29900;
+
+}
+
+
+function updatePaymentPrice() {
+
+  const price =
+    getCurrentPrice();
+
+
+  const paymentPrice =
+    document.getElementById(
+      "paymentPrice"
+    );
+
+  const bankAmount =
+    document.getElementById(
+      "bankAmount"
+    );
+
+  const noticeAmount =
+    document.getElementById(
+      "noticeAmount"
+    );
+
+  const countdownBox =
+    document.getElementById(
+      "countdownBox"
+    );
+
+  const formatted =
+    price.toLocaleString("ko-KR")
+    + "원";
+
+
+  paymentPrice.textContent =
+    "₩" +
+    price.toLocaleString("ko-KR");
+
+
+  bankAmount.textContent =
+    formatted;
+
+
+  noticeAmount.textContent =
+    formatted;
+
+
+  if (price === 49900) {
+
+    countdownBox.innerHTML =
+
+      '<div class="countdown-label">' +
+      '현재 판매 가격' +
+      '</div>' +
+
+      '<div class="payment-countdown" ' +
+      'style="color:#777;">' +
+      '₩49,900' +
+      '</div>';
+
+  }
+
+}
+
+
+function updateCountdown() {
+
+  const countdown =
+    document.getElementById(
+      "paymentCountdown"
+    );
+
+
+  let remaining =
+    Number(deadline) - Date.now();
+
+
+  if (remaining <= 0) {
+
+    updatePaymentPrice();
+
+    return;
+
+  }
+
+
+  const hours =
+    Math.floor(
+      remaining /
+      (1000 * 60 * 60)
+    );
+
+
+  const minutes =
+    Math.floor(
+      (remaining %
+        (1000 * 60 * 60))
+      /
+      (1000 * 60)
+    );
+
+
+  const seconds =
+    Math.floor(
+      (remaining %
+        (1000 * 60))
+      /
+      1000
+    );
+
+
+  countdown.textContent =
+    String(hours).padStart(2, "0")
+    + ":" +
+    String(minutes).padStart(2, "0")
+    + ":" +
+    String(seconds).padStart(2, "0");
+
+
+  updatePaymentPrice();
+
+}
+
+
+updateCountdown();
+
+
+setInterval(
+  updateCountdown,
+  1000
+);
+
+
+/*
+  ==========================================
+  주문 제출
+  ==========================================
+*/
+
 function submitOrder() {
 
   const email =
-    document.getElementById("email").value.trim();
+    document
+      .getElementById("email")
+      .value
+      .trim();
+
 
   const depositor =
-    document.getElementById("depositor").value.trim();
+    document
+      .getElementById("depositor")
+      .value
+      .trim();
+
 
   const button =
-    document.getElementById("submitButton");
+    document.getElementById(
+      "submitButton"
+    );
 
-
-  // 이메일 확인
 
   if (!email) {
 
@@ -828,16 +1071,17 @@ function submitOrder() {
       .focus();
 
     return;
+
   }
 
-
-  // 이메일 형식 확인
 
   const emailPattern =
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 
-  if (!emailPattern.test(email)) {
+  if (
+    !emailPattern.test(email)
+  ) {
 
     alert(
       "올바른 이메일 주소를 입력해주세요."
@@ -848,10 +1092,9 @@ function submitOrder() {
       .focus();
 
     return;
+
   }
 
-
-  // 입금자명 확인
 
   if (!depositor) {
 
@@ -864,16 +1107,29 @@ function submitOrder() {
       .focus();
 
     return;
+
   }
 
 
-  button.disabled = true;
+  /*
+    제출하는 순간의 가격을 다시 계산합니다.
+
+    예:
+    29,900원 → 29,900
+    3시간 종료 → 49,900
+  */
+
+  const amount =
+    getCurrentPrice();
+
+
+  button.disabled =
+    true;
+
 
   button.innerText =
     "접수 중...";
 
-
-  // Google Apps Script 전송용 form
 
   const form =
     document.createElement("form");
@@ -891,16 +1147,12 @@ function submitOrder() {
     "googleSubmitFrame";
 
 
-  // 이메일
-
   addInput(
     form,
     "email",
     email
   );
 
-
-  // 입금자명
 
   addInput(
     form,
@@ -909,8 +1161,6 @@ function submitOrder() {
   );
 
 
-  // 상품
-
   addInput(
     form,
     "product",
@@ -918,16 +1168,12 @@ function submitOrder() {
   );
 
 
-  // 금액
-
   addInput(
     form,
     "amount",
-    "29900"
+    String(amount)
   );
 
-
-  // 상태
 
   addInput(
     form,
@@ -935,8 +1181,6 @@ function submitOrder() {
     "입금 확인 요청"
   );
 
-
-  // 시간
 
   addInput(
     form,
@@ -948,12 +1192,8 @@ function submitOrder() {
   document.body.appendChild(form);
 
 
-  // 전송
-
   form.submit();
 
-
-  // 성공창 표시
 
   document
     .getElementById("successText")
@@ -969,6 +1209,10 @@ function submitOrder() {
     escapeHtml(email) +
     "</strong><br><br>" +
 
+    "신청 금액: <strong>" +
+    amount.toLocaleString("ko-KR") +
+    "원</strong><br><br>" +
+
     "입금 확인 후 해당 이메일로<br>" +
     "NFC 스타터팩을 보내드립니다.<br><br>" +
 
@@ -983,14 +1227,19 @@ function submitOrder() {
     "block";
 
 
-  button.disabled = false;
+  button.disabled =
+    false;
+
 
   button.innerText =
     "입금했습니다 →";
+
 }
 
 
-/* 숨겨진 input 생성 */
+/*
+  숨겨진 input 생성
+*/
 
 function addInput(
   form,
@@ -999,43 +1248,62 @@ function addInput(
 ) {
 
   const input =
-    document.createElement("input");
+    document.createElement(
+      "input"
+    );
+
 
   input.type =
     "hidden";
 
+
   input.name =
     name;
+
 
   input.value =
     value;
 
+
   form.appendChild(input);
+
 }
 
 
-/* HTML 특수문자 보호 */
+/*
+  HTML 특수문자 보호
+*/
 
 function escapeHtml(text) {
 
   const div =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   div.textContent =
     text;
 
+
   return div.innerHTML;
+
 }
 
 
-/* 성공창 닫기 */
+/*
+  성공창 닫기
+*/
 
 function closeModal() {
 
   document
-    .getElementById("successModal")
+    .getElementById(
+      "successModal"
+    )
     .style.display =
     "none";
+
 }
 
 </script>
